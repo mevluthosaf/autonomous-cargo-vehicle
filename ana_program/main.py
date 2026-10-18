@@ -49,7 +49,68 @@ except Exception as e:
     print(f"[-] Arduino bağlantı hatası: {e}")
     arduino = None
 
-TOLERANCE = 50
+# --- PID HIZ VE YÖN KONTROLCÜSÜ ---
+class PIDController:
+    """
+    Otonom şerit ve yol takibi için PID kontrolcüsü.
+    error = yol_merkezi_x - goruntu_merkezi_x
+    """
+    def __init__(self, kp=0.45, ki=0.01, kd=0.15, base_speed=150, min_speed=50, max_speed=220, windup_limit=50):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.base_speed = base_speed
+        self.min_speed = min_speed
+        self.max_speed = max_speed
+        self.windup_limit = windup_limit
+
+        self.integral = 0.0
+        self.prev_error = 0.0
+        self.last_time = None
+
+    def compute(self, error):
+        now = time.time()
+        if self.last_time is None:
+            dt = 0.5
+        else:
+            dt = max(now - self.last_time, 0.2)
+        self.last_time = now
+
+        # Oransal bileşen (P)
+        p = self.kp * error
+
+        # İntegral bileşen (I) - Anti-windup korumalı
+        self.integral += error * dt
+        self.integral = max(-self.windup_limit, min(self.windup_limit, self.integral))
+        i = self.ki * self.integral
+
+        # Türev bileşen (D)
+        derivative = (error - self.prev_error) / dt
+        d = self.kd * derivative
+        self.prev_error = error
+
+        # Toplam PID yön düzeltmesi
+        correction = p + i + d
+
+        # Diferansiyel Hız Hesabı:
+        # error > 0: Yol sağda -> Araç sağa dönmeli -> Sol motor hızlanır, Sağ motor yavaşlar
+        # error < 0: Yol solda -> Araç sola dönmeli -> Sağ motor hızlanır, Sol motor yavaşlar
+        left_speed = int(self.base_speed + correction)
+        right_speed = int(self.base_speed - correction)
+
+        # Hız sınırlandırma (clamping: min_speed .. max_speed)
+        left_speed = max(self.min_speed, min(self.max_speed, left_speed))
+        right_speed = max(self.min_speed, min(self.max_speed, right_speed))
+
+        return left_speed, right_speed, correction
+
+    def reset(self):
+        self.integral = 0.0
+        self.prev_error = 0.0
+        self.last_time = None
+
+
+pid = PIDController(kp=0.45, ki=0.01, kd=0.15, base_speed=150)
 
 
 def tahmin_et(kamera_karesi):
@@ -86,7 +147,7 @@ son_islem_zamani = time.time()
 islem_sayaci = 0
 
 print("=" * 40)
-print(">>> OTONOM SÜRÜŞ BAŞLADI <<<")
+print(">>> OTONOM SÜRÜŞ BAŞLADI (PID MODU) <<<")
 print(">>> İzleme Modu Aktif. Durdurmak için: Ctrl + C <<<")
 print("-" * 40)
 
@@ -114,27 +175,32 @@ try:
 
             if road_center_x is not None:
                 error = road_center_x - img_center_x
-                if abs(error) <= TOLERANCE:
-                    cmd = 'S'
-                    durum_metni = "DUZ "
-                elif error > TOLERANCE:
-                    cmd = 'R'
-                    durum_metni = "SAG "
-                else:
-                    cmd = 'L'
-                    durum_metni = "SOL "
-                hata_miktari = f"{error:>4}"  # Sağa dayalı formatlama
-            else:
-                cmd = 'B'
-                durum_metni = "DUR "
-                hata_miktari = "YOK "
+                left_speed, right_speed, correction = pid.compute(error)
+                cmd_packet = f"<{left_speed},{right_speed}>\n"
 
-            # Komut gönderme
-            if arduino:
-                arduino.write(cmd.encode())
-                print(f"[# {islem_sayaci:04d}] Hedef: {durum_metni} | Hata Payı: {hata_miktari} | Gönderilen: {cmd}")
+                # Durum metni belirleme (görsel telemetri)
+                if abs(error) <= 25:
+                    yon = "DUZ      "
+                elif error > 0:
+                    yon = "HAFIF SAG" if error < 80 else "SERT SAG "
+                else:
+                    yon = "HAFIF SOL" if error > -80 else "SERT SOL "
+
+                telemetri = (
+                    f"[# {islem_sayaci:04d}] Yön: {yon} | Hata: {error:>4}px | "
+                    f"Düzeltme: {correction:>+5.1f} | PWM (Sol/Sağ): {left_speed:3d}/{right_speed:3d}"
+                )
             else:
-                print(f"[# {islem_sayaci:04d}] Hedef: {durum_metni} | Hata Payı: {hata_miktari} | (ARDUINO YOK)")
+                pid.reset()
+                cmd_packet = "<0,0>\n"
+                telemetri = f"[# {islem_sayaci:04d}] Yön: YOL YOK   | Hata:  YOK | PWM (Sol/Sağ):   0/  0 (FREN)"
+
+            # Arduino'ya paket gönderme (<left,right>)
+            if arduino:
+                arduino.write(cmd_packet.encode())
+                print(telemetri)
+            else:
+                print(f"{telemetri} | (ARDUINO YOK)")
 
 except KeyboardInterrupt:
     print("\n" + "=" * 40)
@@ -142,8 +208,8 @@ except KeyboardInterrupt:
 finally:
     cap.release()
     if arduino:
-        # Program kapanırken aracı güvene almak için durma komutu
-        arduino.write('B'.encode())
+        # Program kapanırken motorları durdur
+        arduino.write(b"<0,0>\n")
         arduino.close()
     print("[*] Donanım bağlantıları güvenle kapatıldı. İyi çalışmalar!")
     print("=" * 40)
