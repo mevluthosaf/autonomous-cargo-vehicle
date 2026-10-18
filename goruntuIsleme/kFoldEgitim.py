@@ -62,8 +62,19 @@ def egitim_yap(model, loader, optimizer, loss_fn):
 
 
 # --- ANA DÖNGÜ (5-FOLD) ---
-resim_klasoru = "islenmisVeriler/tumResimler"
-maske_klasoru = "islenmisVeriler/tumMaskeler"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+resim_klasoru = os.path.join(BASE_DIR, "islenmisVeriler", "tumResimler")
+maske_klasoru = os.path.join(BASE_DIR, "islenmisVeriler", "tumMaskeler")
+cikti_klasoru = os.path.join(BASE_DIR, "ciktiDosyalari", "modeller")
+
+if not os.path.exists(resim_klasoru) or not os.path.exists(maske_klasoru):
+    print(f"[-] Hata: Veri seti klasörleri bulunamadı!")
+    print(f"    Resimler: {resim_klasoru}")
+    print(f"    Maskeler: {maske_klasoru}")
+    print(f"[*] Eğitime başlamak için 'islenmisVeriler' klasörünü proje kök dizinine ekleyiniz.")
+    exit(1)
+
+os.makedirs(cikti_klasoru, exist_ok=True)
 tum_resimler = np.array(os.listdir(resim_klasoru))
 
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
@@ -92,6 +103,6 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(tum_resimler)):
         print(f"Epoch {epoch + 1}/{EPOCHS} - Loss: {ortalama_loss:.4f}")
 
     # Modeli Kaydet
-    model_adi = f"ciktiDosyalari/modeller/unet_fold{fold + 1}.pth"
+    model_adi = os.path.join(cikti_klasoru, f"unet_fold{fold + 1}.pth")
     torch.save(model.state_dict(), model_adi)
     print(f"Model kaydedildi: {model_adi}")

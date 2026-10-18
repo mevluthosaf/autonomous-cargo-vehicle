@@ -10,9 +10,18 @@ CIHAZ = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 RESIM_BOYUTU = 640
 THRESHOLD = 0.75  # Taşmayı önlemek için eşiği 0.75 yaptık (Gerekirse 0.8 yapabilirsin)
 
-MODEL_KLASORU = "ciktiDosyalari/modeller/"
-GIRIS_VIDEO_YOLU = r"assets/test_video.mp4"  # Test etmek istediğin videonun yolu
-CIKTI_KLASORU = "ciktiDosyalari/test_videolari/"
+# Proje Kök Dizini (autonomous-cargo-vehicle/)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+MODEL_KLASORU = os.path.join(BASE_DIR, "ciktiDosyalari", "modeller")
+GIRIS_VIDEO_YOLU = os.path.join(BASE_DIR, "assets", "test_video.mp4")
+CIKTI_KLASORU = os.path.join(BASE_DIR, "ciktiDosyalari", "test_videolari")
+
+# Test videosu kontrolü
+if not os.path.exists(GIRIS_VIDEO_YOLU):
+    print(f"[!] Bilgilendirme: Test videosu bulunamadı ({GIRIS_VIDEO_YOLU}).")
+    print("[*] İleride test edilmek istendiğinde 'assets/test_video.mp4' olarak video eklenebilir.")
+    exit(0)
 
 # Çıktı klasörü yoksa otomatik oluştur
 os.makedirs(CIKTI_KLASORU, exist_ok=True)
@@ -26,8 +35,12 @@ for fold in range(1, 6):
     model_yolu = os.path.join(MODEL_KLASORU, model_adi)
 
     if not os.path.exists(model_yolu):
-        print(f"{model_adi} bulunamadı, atlanıyor...")
-        continue
+        alt_yol = os.path.join(BASE_DIR, "ana_program", model_adi)
+        if os.path.exists(alt_yol):
+            model_yolu = alt_yol
+        else:
+            print(f"{model_adi} bulunamadı, atlanıyor...")
+            continue
 
     print(f"\n{'=' * 10} FOLD {fold} VİDEO İŞLEME BAŞLADI {'=' * 10}")
 

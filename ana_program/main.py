@@ -17,14 +17,17 @@ print(f"[*] Sistem Başlatılıyor...")
 print(f"[*] Kullanılan Donanım: {str(CIHAZ).upper()}")
 
 # Model yükleme
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "unet_fold1.pth")
+
 try:
     model = smp.Unet(encoder_name="resnet18", encoder_weights=None, in_channels=3, classes=1)
-    model.load_state_dict(torch.load("unet_fold1.pth", map_location=CIHAZ))
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=CIHAZ))
     model.to(CIHAZ)
     model.eval()
-    print("[+] U-Net Modeli başarıyla yüklendi.")
+    print(f"[+] U-Net Modeli başarıyla yüklendi: {MODEL_PATH}")
 except Exception as e:
-    print(f"[-] Model yükleme hatası: {e}")
+    print(f"[-] Model yükleme hatası ({MODEL_PATH}): {e}")
     exit()
 
 # Arduino bağlantısı
