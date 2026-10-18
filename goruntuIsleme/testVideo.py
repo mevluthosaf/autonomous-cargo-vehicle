@@ -1,7 +1,17 @@
+import sys
+import os
+
+# Proje Kök Dizini (autonomous-cargo-vehicle/)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+VENV_PYTHON = os.path.join(BASE_DIR, ".venv", "bin", "python")
+
+# Eğer betik .venv dışındaki bir Python yorumlayıcısıyla çağrıldıysa, otomatik olarak .venv ile yeniden başlat:
+if os.path.exists(VENV_PYTHON) and os.path.realpath(sys.executable) != os.path.realpath(VENV_PYTHON):
+    os.execv(VENV_PYTHON, [VENV_PYTHON] + sys.argv)
+
 import torch
 import cv2
 import numpy as np
-import os
 import segmentation_models_pytorch as smp
 from tqdm import tqdm  # İşlem çubuğu için (pip install tqdm)
 
@@ -9,9 +19,6 @@ from tqdm import tqdm  # İşlem çubuğu için (pip install tqdm)
 CIHAZ = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 RESIM_BOYUTU = 640
 THRESHOLD = 0.75  # Taşmayı önlemek için eşiği 0.75 yaptık (Gerekirse 0.8 yapabilirsin)
-
-# Proje Kök Dizini (autonomous-cargo-vehicle/)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 MODEL_KLASORU = os.path.join(BASE_DIR, "ciktiDosyalari", "modeller")
 GIRIS_VIDEO_YOLU = os.path.join(BASE_DIR, "assets", "test_video.mp4")

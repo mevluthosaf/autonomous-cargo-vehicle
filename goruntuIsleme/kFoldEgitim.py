@@ -1,4 +1,14 @@
+import sys
 import os
+
+# Proje Kök Dizini (autonomous-cargo-vehicle/)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+VENV_PYTHON = os.path.join(BASE_DIR, ".venv", "bin", "python")
+
+# Eğer betik .venv dışındaki bir Python yorumlayıcısıyla çağrıldıysa, otomatik olarak .venv ile yeniden başlat:
+if os.path.exists(VENV_PYTHON) and os.path.realpath(sys.executable) != os.path.realpath(VENV_PYTHON):
+    os.execv(VENV_PYTHON, [VENV_PYTHON] + sys.argv)
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset

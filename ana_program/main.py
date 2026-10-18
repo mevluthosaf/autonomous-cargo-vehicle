@@ -1,4 +1,14 @@
+import sys
 import os
+
+# Proje Kök Dizini ve Sanal Ortam (.venv) Kontrolü
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+VENV_PYTHON = os.path.join(PROJECT_ROOT, ".venv", "bin", "python")
+
+# Eğer betik .venv dışındaki bir Python yorumlayıcısıyla çağrıldıysa, otomatik olarak .venv ile yeniden başlat:
+if os.path.exists(VENV_PYTHON) and os.path.realpath(sys.executable) != os.path.realpath(VENV_PYTHON):
+    os.execv(VENV_PYTHON, [VENV_PYTHON] + sys.argv)
 
 # OpenCV'nin gereksiz terminal uyarılarını (GStreamer vb.) tamamen susturur
 os.environ["OPENCV_LOG_LEVEL"] = "FATAL"
