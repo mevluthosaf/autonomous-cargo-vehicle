@@ -1,104 +1,55 @@
 // =================================================================
-// Otonom Kargo Araci - L298N PWM ve PID Motor Kontrol Yazilimi
-// Pinler: 5, 6, 9, 10 (Arduino Uno Donanimsal PWM Pinleri)
+// 🚚 Otonom Kargo Aracı - L298N PWM ve PID Motor Kontrol Yazılımı
+// Pinler: 5, 6, 9, 10 (Arduino Uno Donanımsal PWM Pinleri)
 // =================================================================
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include <Arduino.h>
-#elif defined(ARDUINO)
-  #include <WProgram.h>
-#else
-  // Editor ve IDE (PyCharm / VS Code / CLion) C++ linter hatalarini onlemek icin:
-  #include <stdint.h>
-  #include <stdio.h>
-  #include <stdlib.h>
-
-  #ifndef HIGH
-    #define HIGH 1
-    #define LOW  0
-    #define OUTPUT 1
-    #define INPUT  0
-  #endif
-
-  #ifndef constrain
-    #define constrain(amt, low, high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
-  #endif
-
-  #ifndef byte
-    typedef uint8_t byte;
-  #endif
-
-  void pinMode(uint8_t pin, uint8_t mode);
-  void digitalWrite(uint8_t pin, uint8_t val);
-  int  analogRead(uint8_t pin);
-  void analogWrite(uint8_t pin, int val);
-  unsigned long millis(void);
-  void delay(unsigned long ms);
-
-  class HardwareSerial {
-  public:
-    void begin(unsigned long baud);
-    int available(void);
-    int read(void);
-    size_t print(const char* s);
-    size_t println(const char* s);
-  };
-  extern HardwareSerial Serial;
-#endif
-
-// --- FONKSIYON ILERI BILDIRIMLERI (Forward Declarations) ---
-void dur();
-void processSerial();
-void parseAndApplyMotors(char* data);
-void setMotors(int leftPwm, int rightPwm);
-
-// --- PIN TANIMLAMALARI ---
-const int motorA1 = 5;  // Sol Motorlar Ileri (PWM)
+const int motorA1 = 5;  // Sol Motorlar İleri (PWM)
 const int motorA2 = 6;  // Sol Motorlar Geri  (PWM)
-const int motorB1 = 9;  // Sag Motorlar Ileri (PWM)
-const int motorB2 = 10; // Sag Motorlar Geri  (PWM)
+const int motorB1 = 9;  // Sağ Motorlar İleri (PWM)
+const int motorB2 = 10; // Sağ Motorlar Geri  (PWM)
 
-// Seri Iletisim Tamponu: paket formati [sol_pwm, sag_pwm]
+// Seri İletişim Tamponu (<left_pwm,right_pwm>)
 char serialBuffer[32];
 byte bufferIndex = 0;
 bool receivingPacket = false;
 
-// Guvenlik Zamanlayicisi (Watchdog Timer)
+// Güvenlik Zamanlayıcısı (Watchdog Timer)
 unsigned long lastCommandTime = 0;
-const unsigned long TIMEOUT_MS = 1500; // 1.5 saniye veri gelmezse motorlari otomatik durdur
+const unsigned long TIMEOUT_MS =
+    1500; // 1.5 saniye veri gelmezse motorları otomatik durdur
 
 void setup() {
-  // Motor kontrol pinlerini cikis yap
+  // Motor kontrol pinlerini çıkış yap
   pinMode(motorA1, OUTPUT);
   pinMode(motorA2, OUTPUT);
   pinMode(motorB1, OUTPUT);
   pinMode(motorB2, OUTPUT);
 
-  // Baslangicta motorlari tamamen durdur
+  // Başlangıçta motorları tamamen durdur
   dur();
 
-  // Seri iletisimi baslat (Python ile 9600 baud)
+  // Seri iletişimi başlat (Python ile 9600 baud)
   Serial.begin(9600);
   Serial.println("Otonom Kargo Araci PID Modu Hazir.");
   lastCommandTime = millis();
 }
 
 void loop() {
-  // Python'dan gelen seri paketleri dinle ve isle
+  // Python'dan gelen seri paketleri dinle ve işle
   processSerial();
 
-  // Guvenlik: Baglanti koparsa veya Python donarsa motorlari durdur
+  // Güvenlik: Bağlantı koparsa veya Python donarsa motorları durdur
   if (millis() - lastCommandTime > TIMEOUT_MS) {
     dur();
   }
 }
 
-// --- SERI PAKET AYRISTIRMA ---
+// --- SERİ PAKET AYRIŞTIRMA ---
 void processSerial() {
   while (Serial.available() > 0) {
     char c = Serial.read();
 
-    // Paket Baslangici
+    // Paket Başlangıcı
     if (c == '<') {
       bufferIndex = 0;
       receivingPacket = true;
@@ -118,7 +69,7 @@ void processSerial() {
         serialBuffer[bufferIndex++] = c;
       }
     }
-    // Acil Durdurma Komutu ('B') destegi
+    // Acil Durdurma Komutu ('B') desteği
     else if (c == 'B') {
       dur();
       lastCommandTime = millis();
@@ -126,8 +77,8 @@ void processSerial() {
   }
 }
 
-// Paket metnini (sol_pwm, sag_pwm) tamsayilara donustur
-void parseAndApplyMotors(char* data) {
+// "<left_pwm,right_pwm>" metnini tamsayılara dönüştür
+void parseAndApplyMotors(char *data) {
   int leftPwm = 0;
   int rightPwm = 0;
 
@@ -136,9 +87,9 @@ void parseAndApplyMotors(char* data) {
   }
 }
 
-// --- MOTOR SURME (DIFERANSIYEL HIZ VE PWM) ---
+// --- MOTOR SÜRME (DİFERANSİYEL HIZ & PWM) ---
 void setMotors(int leftPwm, int rightPwm) {
-  // Hizlari guvenli sinirlar icinde tut (-255 ile +255 arasi)
+  // Hızları güvenli sınırlar içinde tut (-255 ile +255 arası)
   leftPwm = constrain(leftPwm, -255, 255);
   rightPwm = constrain(rightPwm, -255, 255);
 
@@ -154,7 +105,7 @@ void setMotors(int leftPwm, int rightPwm) {
     digitalWrite(motorA2, LOW);
   }
 
-  // --- SAG MOTORLAR ---
+  // --- SAĞ MOTORLAR ---
   if (rightPwm > 0) {
     analogWrite(motorB1, rightPwm);
     digitalWrite(motorB2, LOW);
