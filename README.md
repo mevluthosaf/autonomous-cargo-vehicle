@@ -126,6 +126,6 @@ python ana_program/main.py
 
 ## 👥 Project Team & Supervisor
 
-* **Developers:** Zeliha Önel & Mevlüt Hoşaf
+* **Developers:** Zeliha Önel & Mevlüt Hoşaf & Burak Güdücü
 * **Academic Advisor:** Assoc. Prof. Dr. Ömer Kaan Baykan
 * **Institution:** Konya Technical University — Department of Computer Engineering
