@@ -257,12 +257,12 @@ class YoloDetectionThread(threading.Thread):
         self.interval = 1.0 / target_fps
         self.conf_thresh = conf_thresh
 
-        # Sınıf Eşleştirme Sözlükleri (Genişletilebilir Sınıf Yapısı)
-        self.STOP_KEYS = ["stop", "dur", "red_light", "kirmizi_isik", "no_entry", "girilmez"]
-        self.SLOW_KEYS = ["yield", "yol_ver", "pedestrian", "yaya", "bump", "kasis", "warning", "dikkat", "speed"]
+        # Sınıf Eşleştirme Sözlükleri (Roboflow Veri Seti ve Genel Nesneler İçin)
+        self.STOP_KEYS = ["stop", "dur", "red_light", "kirmizi_isik", "do_not_enter", "no_entry", "railway_crossing", "girilmez"]
+        self.SLOW_KEYS = ["yield", "yol_ver", "ped_crossing", "ped_zebra_cross", "pedestrian", "yaya", "warning", "yellow_light", "traffic_light", "bump", "kasis", "speed", "dikkat"]
         self.OBSTACLE_KEYS = ["obstacle", "engel", "cone", "duba", "box", "koli", "person", "insan", "car", "araba", "bicycle", "bisiklet"]
-        self.RIGHT_KEYS = ["turn_right", "sag"]
-        self.LEFT_KEYS = ["turn_left", "sol"]
+        self.RIGHT_KEYS = ["turn_right", "do_not_turn_l", "sag"]
+        self.LEFT_KEYS = ["turn_left", "enter_left_lane", "do_not_turn_r", "sol"]
 
     def _sinif_tipi_belirle(self, label_lower):
         for k in self.STOP_KEYS:

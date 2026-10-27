@@ -179,3 +179,22 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# macOS metadata
+.DS_Store
+
+# YOLO Veri Seti, Eğitim Kayıtları ve Geçici Ağırlıklar
+dataset_yolo/
+*.zip
+ciktiDosyalari/yolo_egitim_kayitlari/
+runs/
+yolov8*.pt
+yolo11*.pt
+
+# Test Videoları ve İşlenmiş Video Çıktıları
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+ciktiDosyalari/test_videolari/

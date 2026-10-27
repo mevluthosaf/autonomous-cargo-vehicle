@@ -9,6 +9,9 @@ VENV_PYTHON = os.path.join(BASE_DIR, ".venv", "bin", "python")
 if os.path.exists(VENV_PYTHON) and os.path.realpath(sys.executable) != os.path.realpath(VENV_PYTHON):
     os.execv(VENV_PYTHON, [VENV_PYTHON] + sys.argv)
 
+import warnings
+warnings.filterwarnings("ignore")
+
 import argparse
 import yaml
 from pathlib import Path
