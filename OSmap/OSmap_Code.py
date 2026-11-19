@@ -1,3 +1,4 @@
+import os
 import osmnx as ox
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -18,7 +19,8 @@ try:
     # retain_all=True yapıyoruz ki birbiriyle kopuk çizilmiş yollar varsa silinmesin.
     #G = ox.graph_from_place(place_name, network_type='all', custom_filter=custom_filter, retain_all=True)
     # API'den değil, indirdiğimiz güncel dosyadan grafı oluştur
-    G = ox.graph_from_xml("map.osm")
+    osm_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "map.osm")
+    G = ox.graph_from_xml(osm_path)
 
     print("Bisiklet yolu haritası başarıyla indirildi!")
 
